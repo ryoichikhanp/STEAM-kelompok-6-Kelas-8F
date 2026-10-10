@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kelompok 1 STEAM 7A - SMP Negeri 19 Jakarta</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        :root {
+            --emerald-dark: #064e3b;
+            --emerald-deep: #022c22;
+            --emerald-primary: #065f46;
+            --emerald-light: #10b981;
+        }
+
+        html, body {
+            height: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            scroll-behavior: smooth;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #fcfdfc; 
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wrapper {
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .site-footer {
+            flex-shrink: 0;
+            background-color: #022c22;
+            color: white;
+            padding: 3rem 1.5rem;
+            border-top-left-radius: 2.5rem;
+            border-top-right-radius: 2.5rem;
+            position: relative;
+            z-index: 50;
+            margin-top: 4rem;
+        }
+        @media (min-width: 768px) {
+            .site-footer {
+                padding: 4rem 2rem;
+                border-top-left-radius: 3.5rem;
+                border-top-right-radius: 3.5rem;
+            }
+        }
+
+        /* --- ANIMASI DASAR --- */
+        @keyframes grain {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-5%, -10%); }
+            30% { transform: translate(3%, -15%); }
+            50% { transform: translate(12%, 9%); }
+            70% { transform: translate(9%, 4%); }
+            90% { transform: translate(-10%, 10%); }
+        }
+
+        @keyframes float-vegetable {
+            0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+            10% { opacity: var(--veggie-opacity, 0.6); }
+            90% { opacity: var(--veggie-opacity, 0.6); }
+            100% { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate, 360deg)); opacity: 0; }
+        }
+
+        .animate-fade-in { animation: fadeInSlide 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        @keyframes fadeInSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* --- ANIMASI BARU (MELAYANG & MUNCUL) --- */
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float-slow { animation: float-slow 4s ease-in-out infinite; }
+
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        /* Animasi Scroll Reveal */
+        .reveal-up { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
+        .reveal-left { opacity: 0; transform: translateX(-40px); transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
+        .reveal-right { opacity: 0; transform: translateX(40px); transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
+        .reveal-scale { opacity: 0; transform: scale(0.9); transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); }
+        
+        .is-visible { opacity: 1 !important; transform: translate(0) scale(1) !important; }
+
+        /* Delay agar muncul berurutan (Staggered) */
+        .delay-100 { transition-delay: 100ms; }
+        .delay-200 { transition-delay: 200ms; }
+        .delay-300 { transition-delay: 300ms; }
+        .delay-400 { transition-delay: 400ms; }
+        .delay-500 { transition-delay: 500ms; }
+        .delay-600 { transition-delay: 600ms; }
+
+        .page-transition { transition: opacity 0.5s ease; }
+        .page-hidden { display: none !important; }
+
+        .bg-grain {
+            position: fixed; top: -100%; left: -100%; width: 300%; height: 300%;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.04; pointer-events: none; z-index: 1;
+            animation: grain 8s steps(10) infinite;
+        }
+
+        .admin-only-flex { display: none !important; }
+        .admin-only-inline { display: none !important; }
+        .admin-only-block { display: none !important; }
+        
+        body.admin-mode .admin-only-flex { display: flex !important; }
+        body.admin-mode .admin-only-inline { display: inline-block !important; }
+        body.admin-mode .admin-only-block { display: block !important; }
+        
+        .veggie-container {
+            position: absolute; inset: 0; overflow: hidden; pointer-events: none !important; z-index: 1;
+        }
+        .veggie-float {
+            position: absolute; font-size: 2rem; pointer-events: none !important;
+            animation: float-vegetable linear infinite;
+        }
+
+        nav {
+            position: fixed;
+            z-index: 9999 !important;
+            pointer-events: auto !important;
+        }
+
+        button, a, input, select, .interactive-el {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            position: relative;
+            z-index: 1000 !important;
+        }
+
+        .delete-btn-img {
+            position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2000 !important;
+            background: #ef4444; color: white; width: 2rem; height: 2rem;
+            border-radius: 9999px; display: flex; justify-content: center; align-items: center;
+            opacity: 0; transform: scale(0.9); transition: all 0.2s; font-size: 10px;
+        }
+        @media (min-width: 768px) {
+            .delete-btn-img { top: 1rem; right: 1rem; width: 2.5rem; height: 2.5rem; font-size: 14px; }
+        }
+        .group:hover .delete-btn-img { opacity: 1; transform: scale(1); }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grain"></div>
+
+    <div class="wrapper">
+        <nav class="bg-white/80 backdrop-blur-xl border-b border-gray-100 w-full top-0 flex flex-col sm:flex-row items-center justify-between px-4 sm:px-8 py-3 sm:py-5 animate-fade-in gap-3 sm:gap-0">
+            <div class="flex items-center space-x-3 cursor-pointer group interactive-el" onclick="window.handleNavClick('home')">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-900 rounded-xl sm:rounded-2xl flex items-center justify-center text-white font-bold transition-transform group-hover:rotate-12 group-hover:scale-110 duration-300 text-sm sm:text-base">19</div>
+                <div>
+                    <span class="text-xs sm:text-sm font-black text-gray-900 block leading-none uppercase tracking-tighter transition-colors group-hover:text-emerald-700">Kelompok 1</span>
+                    <span class="text-[8px] sm:text-[10px] font-bold text-emerald-600 uppercase tracking-widest">SMPN 19 Jakarta</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3 sm:space-x-6 w-full sm:w-auto justify-center">
+                <button type="button" onclick="window.handleNavClick('home')" class="text-[9px] sm:text-xs font-bold text-gray-500 hover:text-emerald-700 transition-colors uppercase tracking-widest interactive-el">Beranda</button>
+                <button type="button" onclick="window.scrollToSection('materi-section')" class="text-[9px] sm:text-xs font-bold text-gray-500 hover:text-emerald-700 transition-colors uppercase tracking-widest interactive-el">Edukasi</button>
+                <div class="relative">
+                    <button type="button" id="dropdown-btn" onclick="window.toggleDropdown(event)" class="bg-emerald-900 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1 sm:gap-2 hover:bg-emerald-800 transition-all shadow-lg interactive-el hover:scale-105 active:scale-95">
+                        Mata Pelajaran
+                        <svg class="w-3 h-3 opacity-50 transition-transform duration-300" id="dropdown-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="dropdown-menu" class="hidden absolute right-0 sm:right-0 mt-3 w-56 sm:w-64 bg-white border border-gray-100 shadow-2xl rounded-3xl py-4 z-[10000] overflow-hidden origin-top-right transition-all transform scale-95 opacity-0">
+                        <div class="px-5 py-2 mb-2 text-[8px] sm:text-[9px] font-black text-gray-300 uppercase tracking-[0.2em]">Dokumentasi Tugas</div>
+                        <div class="grid grid-cols-1 max-h-[320px] overflow-y-auto custom-scrollbar">
+                            <button type="button" onclick="window.handleSubjectClick('IPS')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">🌍 IPS</button>
+                            <button type="button" onclick="window.handleSubjectClick('IPA')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">🧪 IPA</button>
+                            <button type="button" onclick="window.handleSubjectClick('MATEMATIKA')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">📐 MATEMATIKA</button>
+                            <button type="button" onclick="window.handleSubjectClick('PJOK')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">⚽ PJOK</button>
+                            <button type="button" onclick="window.handleSubjectClick('B. INDONESIA')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">📖 B. INDONESIA</button>
+                            <button type="button" onclick="window.handleSubjectClick('SENI MUSIK')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">🎸 SENI MUSIK</button>
+                            <button type="button" onclick="window.handleSubjectClick('PAI')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">🕌 PAI</button>
+                            <button type="button" onclick="window.handleSubjectClick('INFORMATIKA')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">💻 INFORMATIKA</button>
+                            <button type="button" onclick="window.handleSubjectClick('PANCASILA')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">🦅 PANCASILA</button>
+                            <button type="button" onclick="window.handleSubjectClick('B. INGGRIS')" class="block w-full text-left px-5 sm:px-6 py-2.5 sm:py-3 text-[10px] sm:text-[11px] font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-8 transition-all duration-300 border-l-4 border-transparent hover:border-emerald-500 interactive-el">𔳤 B. INGGRIS</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="pt-28 sm:pt-24 relative z-10">
+            <div id="p-home" class="page-transition">
+                <section class="max-w-7xl mx-auto px-4 sm:px-8 py-8 md:py-20 flex flex-col md:flex-row items-center gap-8 md:gap-16 rounded-[2rem] md:rounded-[3rem] mb-12 sm:mb-16 overflow-hidden relative">
+                    <div class="absolute inset-0 bg-emerald-950 z-0">
+                        <div id="veggie-particles-hero" class="veggie-container opacity-40"></div>
+                        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_#022c22_100%)] opacity-80"></div>
+                    </div>
+
+                    <div class="w-full md:w-1/2 space-y-6 sm:space-y-8 relative z-20 reveal-left">
+                        <div class="inline-flex items-center gap-2 bg-emerald-900/60 backdrop-blur-md text-emerald-100 px-3 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-emerald-800/50 hover:bg-emerald-800/80 transition-colors cursor-default">
+                            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></span>
+                            Project STEAM Kelompok 1
+                        </div>
+                        <h1 class="text-5xl sm:text-6xl md:text-8xl font-black text-white leading-[0.9] tracking-tighter">
+                            GADO-GADO<br><span class="text-emerald-400 italic">BETAWI</span>
+                        </h1>
+                        <p class="text-sm sm:text-lg text-emerald-100/70 font-medium max-w-md leading-relaxed">
+                            Karya siswa SMP Negeri 19 Jakarta: Eksplorasi tradisi kuliner melalui integrasi Science, Technology, Engineering, Art, dan Mathematics.
+                        </p>
+                        <div class="flex flex-wrap items-center gap-3 sm:gap-4 pt-2 sm:pt-4">
+                            <button type="button" onclick="window.scrollToSection('simulator-anchor')" class="bg-emerald-400 text-emerald-950 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm hover:bg-emerald-300 hover:scale-105 active:scale-95 transition-all shadow-xl interactive-el">Mulai Simulator Gizi</button>
+                            <button type="button" onclick="window.scrollToSection('materi-section')" class="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-xs sm:text-sm hover:bg-white/20 hover:scale-105 active:scale-95 transition-all interactive-el">Pelajari Budaya</button>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-1/2 relative z-20 reveal-right animate-float-slow mt-6 md:mt-0">
+                        <div class="relative group w-[85%] sm:w-full mx-auto">
+                            <div class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full scale-75 group-hover:bg-emerald-400/30 transition-colors duration-700"></div>
+                            <div class="relative aspect-square md:aspect-[4/5] bg-white rounded-[2rem] sm:rounded-[3rem] overflow-hidden border-4 border-white/10 shadow-2xl flex items-center justify-center group transition-transform duration-500 hover:rotate-1">
+                                <img id="h-img" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-700 group-hover:scale-105" />
+                                
+                                <button type="button" class="admin-only-flex delete-btn-img interactive-el" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('hero')">❌</button>
+                                
+                                <div id="h-emoji" class="text-center p-6 sm:p-8 z-0">
+                                    <div class="bg-emerald-50 w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg shadow-emerald-900/5 group-hover:scale-110 transition-transform duration-300">
+                                        <p class="text-5xl sm:text-6xl animate-bounce">🥗</p>
+                                    </div>
+                                    <label class="relative admin-only-inline cursor-pointer bg-emerald-900 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all interactive-el" onclick="event.stopPropagation();">
+                                        Unggah Foto
+                                        <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" onchange="window.uploadImage(this, 'hero')">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="max-w-7xl mx-auto px-4 sm:px-8 mb-16 sm:mb-24 relative overflow-hidden rounded-[2rem] sm:rounded-[3rem]">
+                    <div class="absolute inset-0 veggie-container opacity-20" id="veggie-particles-team"></div>
+                    <div class="bg-emerald-950 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-12 md:p-16 relative overflow-hidden border border-emerald-800 shadow-2xl hover:border-emerald-700 transition-colors duration-500">
+                        <div class="relative z-20">
+                            <div class="mb-8 sm:mb-12 text-center md:text-left reveal-up">
+                                <p class="text-emerald-400 font-black text-[9px] sm:text-[10px] uppercase tracking-[0.4em] mb-2 sm:mb-3">Tim Pengembang</p>
+                                <h2 class="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tighter italic uppercase">Anggota Kelompok 1</h2>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                                <!-- Anggota 1 -->
+                                <div class="reveal-up delay-100 bg-white/5 border border-white/10 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] text-center hover:bg-white/10 hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300">
+                                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center overflow-hidden border-2 border-white/5 group shadow-lg">
+                                        <img id="img-team-ryoichi" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-300 group-hover:scale-110" />
+                                        <div id="emoji-team-ryoichi" class="text-2xl sm:text-3xl z-0 opacity-80 group-hover:scale-125 transition-transform duration-300">🎓</div>
+                                        <button type="button" class="admin-only-flex absolute top-1 right-1 z-[2000] bg-red-500 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-full flex justify-center items-center text-[6px] sm:text-[8px] opacity-0 group-hover:opacity-100 transition-all interactive-el shadow-md" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_ryoichi')">❌</button>
+                                        <label class="admin-only-flex absolute bottom-0 inset-x-0 bg-emerald-950/90 backdrop-blur-sm text-emerald-400 py-1 sm:py-1.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-[1000] justify-center interactive-el" onclick="event.stopPropagation();">
+                                            Unggah
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.uploadImage(this, 'team_ryoichi')">
+                                        </label>
+                                    </div>
+                                    <p class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tighter truncate">Ryoichi Khan P</p>
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-emerald-400/60 uppercase mt-1 tracking-widest">Ketua</p>
+                                </div>
+                                
+                                <!-- Anggota 2 -->
+                                <div class="reveal-up delay-200 bg-white/5 border border-white/10 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] text-center hover:bg-white/10 hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300">
+                                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center overflow-hidden border-2 border-white/5 group shadow-lg">
+                                        <img id="img-team-dinar" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-300 group-hover:scale-110" />
+                                        <div id="emoji-team-dinar" class="text-2xl sm:text-3xl z-0 opacity-80 group-hover:scale-125 transition-transform duration-300">🎨</div>
+                                        <button type="button" class="admin-only-flex absolute top-1 right-1 z-[2000] bg-red-500 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-full flex justify-center items-center text-[6px] sm:text-[8px] opacity-0 group-hover:opacity-100 transition-all interactive-el shadow-md" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_dinar')">❌</button>
+                                        <label class="admin-only-flex absolute bottom-0 inset-x-0 bg-emerald-950/90 backdrop-blur-sm text-emerald-400 py-1 sm:py-1.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-[1000] justify-center interactive-el" onclick="event.stopPropagation();">
+                                            Unggah
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.uploadImage(this, 'team_dinar')">
+                                        </label>
+                                    </div>
+                                    <p class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tighter truncate">Dinar Fadhilah A</p>
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-emerald-400/60 uppercase mt-1 tracking-widest">Desainer</p>
+                                </div>
+
+                                <!-- Anggota 3 -->
+                                <div class="reveal-up delay-300 bg-white/5 border border-white/10 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] text-center hover:bg-white/10 hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300">
+                                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center overflow-hidden border-2 border-white/5 group shadow-lg">
+                                        <img id="img-team-juliana" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-300 group-hover:scale-110" />
+                                        <div id="emoji-team-juliana" class="text-2xl sm:text-3xl z-0 opacity-80 group-hover:scale-125 transition-transform duration-300">✍️</div>
+                                        <button type="button" class="admin-only-flex absolute top-1 right-1 z-[2000] bg-red-500 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-full flex justify-center items-center text-[6px] sm:text-[8px] opacity-0 group-hover:opacity-100 transition-all interactive-el shadow-md" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_juliana')">❌</button>
+                                        <label class="admin-only-flex absolute bottom-0 inset-x-0 bg-emerald-950/90 backdrop-blur-sm text-emerald-400 py-1 sm:py-1.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-[1000] justify-center interactive-el" onclick="event.stopPropagation();">
+                                            Unggah
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.uploadImage(this, 'team_juliana')">
+                                        </label>
+                                    </div>
+                                    <p class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tighter truncate">Juliana Rahmadani</p>
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-emerald-400/60 uppercase mt-1 tracking-widest">Sekretaris</p>
+                                </div>
+
+                                <!-- Anggota 4 -->
+                                <div class="reveal-up delay-400 bg-white/5 border border-white/10 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] text-center hover:bg-white/10 hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300">
+                                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center overflow-hidden border-2 border-white/5 group shadow-lg">
+                                        <img id="img-team-natasya" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-300 group-hover:scale-110" />
+                                        <div id="emoji-team-natasya" class="text-2xl sm:text-3xl z-0 opacity-80 group-hover:scale-125 transition-transform duration-300">💰</div>
+                                        <button type="button" class="admin-only-flex absolute top-1 right-1 z-[2000] bg-red-500 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-full flex justify-center items-center text-[6px] sm:text-[8px] opacity-0 group-hover:opacity-100 transition-all interactive-el shadow-md" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_natasya')">❌</button>
+                                        <label class="admin-only-flex absolute bottom-0 inset-x-0 bg-emerald-950/90 backdrop-blur-sm text-emerald-400 py-1 sm:py-1.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-[1000] justify-center interactive-el" onclick="event.stopPropagation();">
+                                            Unggah
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.uploadImage(this, 'team_natasya')">
+                                        </label>
+                                    </div>
+                                    <p class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tighter truncate">Natasya Aulia</p>
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-emerald-400/60 uppercase mt-1 tracking-widest">Bendahara</p>
+                                </div>
+
+                                <!-- Anggota 5 -->
+                                <div class="reveal-up delay-500 bg-white/5 border border-white/10 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] text-center hover:bg-white/10 hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300">
+                                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center overflow-hidden border-2 border-white/5 group shadow-lg">
+                                        <img id="img-team-ava" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-300 group-hover:scale-110" />
+                                        <div id="emoji-team-ava" class="text-2xl sm:text-3xl z-0 opacity-80 group-hover:scale-125 transition-transform duration-300">🥗</div>
+                                        <button type="button" class="admin-only-flex absolute top-1 right-1 z-[2000] bg-red-500 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-full flex justify-center items-center text-[6px] sm:text-[8px] opacity-0 group-hover:opacity-100 transition-all interactive-el shadow-md" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_ava')">❌</button>
+                                        <label class="admin-only-flex absolute bottom-0 inset-x-0 bg-emerald-950/90 backdrop-blur-sm text-emerald-400 py-1 sm:py-1.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-[1000] justify-center interactive-el" onclick="event.stopPropagation();">
+                                            Unggah
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.uploadImage(this, 'team_ava')">
+                                        </label>
+                                    </div>
+                                    <p class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tighter truncate">Ava Mujahid</p>
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-emerald-400/60 uppercase mt-1 tracking-widest">Gizi</p>
+                                </div>
+
+                                <!-- Anggota 6 -->
+                                <div class="reveal-up delay-600 bg-white/5 border border-white/10 backdrop-blur-md p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] text-center hover:bg-white/10 hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300">
+                                    <div class="relative w-16 h-16 sm:w-20 sm:h-20 bg-white/10 rounded-2xl mx-auto mb-3 sm:mb-4 flex items-center justify-center overflow-hidden border-2 border-white/5 group shadow-lg">
+                                        <img id="img-team-siti" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-300 group-hover:scale-110" />
+                                        <div id="emoji-team-siti" class="text-2xl sm:text-3xl z-0 opacity-80 group-hover:scale-125 transition-transform duration-300">🏛️</div>
+                                        <button type="button" class="admin-only-flex absolute top-1 right-1 z-[2000] bg-red-500 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-full flex justify-center items-center text-[6px] sm:text-[8px] opacity-0 group-hover:opacity-100 transition-all interactive-el shadow-md" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_siti')">❌</button>
+                                        <label class="admin-only-flex absolute bottom-0 inset-x-0 bg-emerald-950/90 backdrop-blur-sm text-emerald-400 py-1 sm:py-1.5 text-[7px] sm:text-[8px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all cursor-pointer z-[1000] justify-center interactive-el" onclick="event.stopPropagation();">
+                                            Unggah
+                                            <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="window.uploadImage(this, 'team_siti')">
+                                        </label>
+                                    </div>
+                                    <p class="text-[9px] sm:text-[10px] font-black text-white uppercase tracking-tighter truncate">Siti Aisyah</p>
+                                    <p class="text-[7px] sm:text-[8px] font-bold text-emerald-400/60 uppercase mt-1 tracking-widest">Budaya</p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="materi-section" class="max-w-7xl mx-auto px-4 sm:px-8 mb-16 sm:mb-20 space-y-12 sm:space-y-20">
+                    <div class="grid lg:grid-cols-2 gap-8 md:gap-16 items-center overflow-hidden py-4">
+                        <div class="space-y-4 sm:space-y-6 z-20 reveal-left">
+                            <div class="inline-block bg-emerald-50 px-3 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black text-emerald-800 uppercase tracking-widest hover:bg-emerald-100 transition-colors">Filosofi & Budaya</div>
+                            <h2 class="text-3xl sm:text-5xl font-black text-gray-900 tracking-tighter leading-tight italic">Simbol Harmoni Masyarakat Betawi</h2>
+                            <p class="text-sm sm:text-base text-gray-600 leading-relaxed">Gado-gado bukan sekadar makanan; ia adalah representasi visual dari keberagaman Jakarta. Nama "Gado" dalam bahasa Betawi berarti campur aduk tanpa nasi. Ini melambangkan bagaimana berbagai elemen masyarakat—dari suku yang berbeda hingga latar belakang ekonomi yang kontras—dapat bersatu dalam satu "wadah" harmoni.</p>
+                            <div class="p-6 sm:p-8 bg-emerald-950 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl text-white relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                                <div class="absolute top-0 right-0 p-6 sm:p-8 text-5xl sm:text-6xl opacity-10 group-hover:rotate-12 group-hover:scale-125 transition-all duration-500">"</div>
+                                <p class="text-xs sm:text-sm italic font-medium relative z-10 leading-relaxed">"Menjadi Betawi berarti berani merayakan percampuran rasa tanpa kehilangan jati diri."</p>
+                            </div>
+                        </div>
+                        <div class="aspect-square bg-emerald-900 rounded-[2rem] sm:rounded-[3rem] overflow-hidden relative group shadow-2xl z-20 reveal-right w-full max-w-sm mx-auto lg:max-w-none">
+                            <img id="img-culture" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-700 group-hover:scale-105" />
+                            <button type="button" class="admin-only-flex delete-btn-img interactive-el" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('culture')">❌</button>
+                            <div class="absolute inset-0 flex items-center justify-center text-6xl sm:text-7xl opacity-20 group-hover:scale-110 transition-transform duration-500">🏛️</div>
+                            <label class="admin-only-inline absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-20 cursor-pointer bg-white text-emerald-950 px-3 sm:px-4 py-2 rounded-xl text-[8px] sm:text-[9px] font-black uppercase shadow-lg interactive-el hover:bg-gray-100" onclick="event.stopPropagation();">
+                                Ganti Foto Budaya
+                                <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" onchange="window.uploadImage(this, 'culture')">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-950 rounded-[2.5rem] sm:rounded-[4rem] p-6 sm:p-12 md:p-16 overflow-hidden relative reveal-up">
+                        <div class="absolute top-0 right-0 w-64 h-64 sm:w-96 sm:h-96 bg-emerald-500/10 blur-[100px] -mr-32 -mt-32 sm:-mr-48 sm:-mt-48 transition-all duration-1000 animate-pulse"></div>
+                        <div class="grid lg:grid-cols-2 gap-8 md:gap-16 items-center relative z-20">
+                            <div class="aspect-square bg-white/5 rounded-[2rem] sm:rounded-[3rem] overflow-hidden relative group order-last lg:order-first border border-white/10 reveal-left delay-200 w-full max-w-sm mx-auto lg:max-w-none">
+                                 <img id="img-nutrition" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-700 group-hover:scale-105" />
+                                 <button type="button" class="admin-only-flex delete-btn-img interactive-el" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('nutrition')">❌</button>
+                                 <div class="absolute inset-0 flex items-center justify-center text-6xl sm:text-7xl opacity-20 group-hover:scale-110 transition-transform duration-500">🥗</div>
+                                 <label class="admin-only-inline absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-20 cursor-pointer bg-emerald-400 text-emerald-950 px-3 sm:px-4 py-2 rounded-xl text-[8px] sm:text-[9px] font-black uppercase shadow-xl interactive-el hover:bg-emerald-300" onclick="event.stopPropagation();">
+                                    Ganti Foto Gizi
+                                    <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" onchange="window.uploadImage(this, 'nutrition')">
+                                </label>
+                            </div>
+                            <div class="space-y-6 sm:space-y-8 text-white reveal-right delay-200">
+                                <div class="inline-block bg-white/10 px-3 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase tracking-widest border border-white/10 hover:bg-white/20 transition-colors">Gizi & Kesehatan</div>
+                                <h2 class="text-3xl sm:text-5xl font-black tracking-tighter leading-tight italic">Superfood Lokal yang Seimbang</h2>
+                                <p class="text-sm sm:text-lg text-emerald-100/60 leading-relaxed">Dari kacamata gizi, Gado-gado adalah paket lengkap. Sayuran hijau memberikan mikronutrien, tahu/tempe menyediakan protein nabati, dan bumbu kacang sebagai lemak sehat. Ini adalah gizi seimbang yang mendukung pertumbuhan remaja di usia sekolah.</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                    <div class="p-5 sm:p-6 bg-white/5 rounded-2xl sm:rounded-3xl border border-white/5 hover:bg-white/10 hover:-translate-y-1 transition-all duration-300">
+                                        <p class="text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase mb-2 tracking-[0.2em]">Serat Tinggi</p>
+                                        <p class="text-[10px] sm:text-xs text-emerald-100/40">Mendukung sistem pencernaan yang optimal.</p>
+                                    </div>
+                                    <div class="p-5 sm:p-6 bg-white/5 rounded-2xl sm:rounded-3xl border border-white/5 hover:bg-white/10 hover:-translate-y-1 transition-all duration-300">
+                                        <p class="text-[9px] sm:text-[10px] font-black text-emerald-400 uppercase mb-2 tracking-[0.2em]">Protein Nabati</p>
+                                        <p class="text-[10px] sm:text-xs text-emerald-100/40">Membangun sel dan massa otot aktif.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div id="simulator-anchor" class="max-w-5xl mx-auto mb-16 sm:mb-20 px-4 sm:px-8 relative reveal-scale">
+                    <div id="isi-piringku-root" class="relative z-20" style="min-height: 500px;"></div>
+                </div>
+
+                <section class="max-w-6xl mx-auto px-4 sm:px-8 mb-16 sm:mb-24 relative reveal-up">
+                    <div class="text-center mb-6 sm:mb-10 reveal-up delay-100">
+                        <div class="inline-block bg-emerald-50 px-3 sm:px-4 py-1.5 rounded-full text-[9px] sm:text-[10px] font-black text-emerald-800 uppercase tracking-widest mb-2 sm:mb-3 hover:bg-emerald-100 transition-colors">Galeri</div>
+                        <h2 class="text-3xl sm:text-4xl font-black text-gray-900 tracking-tighter italic">Foto Bersama Kelompok 1</h2>
+                    </div>
+                    <div class="aspect-video bg-emerald-950 rounded-[1.5rem] sm:rounded-[3rem] overflow-hidden relative group shadow-2xl border-4 sm:border-8 border-white reveal-scale delay-200 hover:border-emerald-100 transition-colors duration-500">
+                        <img id="img-team-group" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-700 group-hover:scale-105" />
+                        <button type="button" class="admin-only-flex delete-btn-img interactive-el" onclick="event.preventDefault(); event.stopPropagation(); window.deleteImage('team_group')">❌</button>
+                        <div id="emoji-team-group" class="absolute inset-0 flex flex-col items-center justify-center opacity-40 z-0 group-hover:opacity-60 transition-opacity">
+                            <p class="text-white/50 text-5xl sm:text-8xl mb-3 sm:mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-transform duration-300">📸</p>
+                            <label class="relative admin-only-inline cursor-pointer bg-emerald-400 text-emerald-950 px-4 sm:px-6 py-2 sm:py-3 rounded-xl sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all interactive-el hover:bg-emerald-300 hover:scale-105 active:scale-95" onclick="event.stopPropagation();">
+                                Unggah Foto Bersama
+                                <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" onchange="window.uploadImage(this, 'team_group')">
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <div id="page-subject" class="page-transition page-hidden relative bg-gray-50 px-4 sm:px-8 py-8 sm:py-16">
+                <div class="max-w-7xl mx-auto relative z-20">
+                    <button type="button" onclick="window.handleNavClick('home')" class="mb-6 sm:mb-10 flex items-center gap-2 sm:gap-3 text-emerald-900 hover:text-emerald-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest transition-all interactive-el hover:-translate-x-2">
+                        <span class="w-6 h-6 sm:w-8 sm:h-8 bg-white border border-emerald-100 rounded-full flex items-center justify-center shadow-sm">←</span> Kembali
+                    </button>
+                    <div class="flex flex-col lg:flex-row gap-10 sm:gap-20 items-start overflow-hidden">
+                        <div class="w-full lg:w-1/2 reveal-left animate-float-slow">
+                            <div class="aspect-[4/5] bg-emerald-950 rounded-[2.5rem] sm:rounded-[4rem] flex items-center justify-center overflow-hidden group relative border-4 sm:border-8 border-white shadow-2xl transition-transform duration-500 hover:rotate-1 w-full max-w-sm mx-auto lg:max-w-none">
+                                <img id="img-subject" src="" class="w-full h-full object-contain object-center hidden absolute inset-0 z-10 transition-transform duration-700 group-hover:scale-105" />
+                                <button type="button" class="admin-only-flex delete-btn-img interactive-el" onclick="event.preventDefault(); event.stopPropagation(); window.deleteSubjectImage()">❌</button>
+                                <div id="subject-icon" class="text-center p-8 sm:p-12 z-0 opacity-40 group-hover:opacity-60 transition-opacity">
+                                    <p class="text-white/20 text-6xl sm:text-8xl mb-4 sm:mb-6 group-hover:scale-110 group-hover:-translate-y-2 transition-transform duration-300">📁</p>
+                                    <label class="relative admin-only-block cursor-pointer bg-emerald-400 text-emerald-950 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl text-[8px] sm:text-[10px] font-black uppercase tracking-widest transition-all interactive-el hover:bg-emerald-300 hover:scale-105 active:scale-95" onclick="event.stopPropagation();">
+                                        Unggah Dokumentasi
+                                        <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" onchange="window.uploadSubjectImage(this)">
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-full lg:w-1/2 space-y-6 sm:space-y-10 reveal-right">
+                            <div class="space-y-1 sm:space-y-2">
+                                <p class="text-emerald-600 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.4em]">Dokumentasi Projek</p>
+                                <h2 id="subject-title" class="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-4 sm:mb-6 break-words">TUGAS</h2>
+                            </div>
+                            <div id="file-list-container" class="space-y-3 sm:space-y-4"></div>
+                            <label class="relative admin-only-flex w-full bg-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] items-center justify-center gap-3 sm:gap-4 cursor-pointer border-4 border-dashed border-emerald-100 hover:bg-emerald-50 hover:border-emerald-300 transition-all duration-300 interactive-el group" onclick="event.stopPropagation();">
+                                <div class="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-emerald-950 flex items-center justify-center text-white text-lg sm:text-xl relative z-10 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300">+</div>
+                                <span class="text-[9px] sm:text-[10px] font-black text-emerald-900 uppercase tracking-widest relative z-10 group-hover:text-emerald-700 transition-colors" id="upload-file-text">Tambah Lampiran Tugas</span>
+                                <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-50" onchange="window.uploadFile(this)">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="simulator-informatika-container" class="max-w-5xl mx-auto mt-16 sm:mt-24 relative hidden reveal-scale delay-200">
+                        <div class="w-full border-t-4 border-dashed border-emerald-900/10 mb-10 sm:mb-16"></div>
+                        <div id="isi-piringku-root-informatika" class="relative z-20" style="min-height: 500px;"></div>
+                    </div>
+                    
+                </div>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="max-w-7xl mx-auto relative z-20 reveal-up">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 mb-6 sm:mb-8">
+                    <div class="text-center md:text-left space-y-2 sm:space-y-3">
+                        <div class="flex items-center gap-2 sm:gap-3 justify-center md:justify-start group cursor-pointer interactive-el" onclick="window.handleNavClick('home')">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-800 rounded-lg sm:rounded-xl flex items-center justify-center text-white font-bold transition-transform group-hover:rotate-12 group-hover:scale-110 duration-300 text-xs sm:text-base">19</div>
+                            <h4 class="text-base sm:text-lg font-black tracking-tighter uppercase text-white group-hover:text-emerald-300 transition-colors">Kelompok 1 STEAM</h4>
+                        </div>
+                        <p class="text-emerald-100/40 text-[10px] sm:text-xs max-w-xs sm:max-w-sm">Projek STEAM SMP Negeri 19 Jakarta - Eksplorasi Budaya & Gizi Lokal.</p>
+                    </div>
+                    <div class="flex gap-4 sm:gap-6">
+                        <button type="button" onclick="window.scrollToSection('materi-section')" class="text-[9px] sm:text-[10px] font-bold text-emerald-100/40 hover:text-emerald-400 uppercase tracking-widest interactive-el transition-colors">Edukasi</button>
+                        <button type="button" onclick="window.scrollToSection('simulator-anchor')" class="text-[9px] sm:text-[10px] font-bold text-emerald-100/40 hover:text-emerald-400 uppercase tracking-widest interactive-el transition-colors">Simulator</button>
+                    </div>
+                </div>
+                
+                <div class="pt-5 sm:pt-6 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
+                    <p class="text-[8px] sm:text-[9px] font-bold text-emerald-100/20 uppercase tracking-widest text-center">© 2026 STEAM Project - SMPN 19 Jakarta</p>
+                    <button type="button" onclick="window.openAdminModal()" id="admin-login-btn" class="text-[7px] sm:text-[8px] text-emerald-100/20 hover:text-white uppercase font-black tracking-[0.2em] transition-all py-1.5 sm:py-2 px-4 sm:px-5 border border-white/5 rounded-full interactive-el hover:bg-white/10">
+                        🔐 LOGIN ADMINISTRATOR
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="admin-modal" class="fixed inset-0 z-[99999] hidden flex items-center justify-center bg-emerald-950/90 backdrop-blur-md p-4 sm:p-6">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-12 shadow-2xl animate-fade-in border border-emerald-100 relative overflow-hidden">
+            <div class="text-center mb-6 sm:mb-8 relative z-10">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-950 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white text-2xl sm:text-3xl mx-auto mb-4 sm:mb-6 shadow-2xl animate-bounce">🔐</div>
+                <h3 class="text-lg sm:text-xl font-black text-gray-900 uppercase tracking-tighter text-center">Akses Administrator</h3>
+            </div>
+            <input type="password" id="admin-pass-input" placeholder="Kode Rahasia..." class="relative z-10 w-full bg-gray-50 border border-gray-100 rounded-xl sm:rounded-2xl px-4 sm:px-6 py-4 sm:py-5 text-center text-lg sm:text-xl font-black tracking-[0.2em] focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-4 sm:mb-6 interactive-el transition-all focus:scale-105">
+            <div class="flex gap-3 sm:gap-4 relative z-10">
+                <button type="button" onclick="window.closeAdminModal()" class="flex-1 text-[9px] sm:text-[10px] font-black text-gray-400 uppercase hover:text-gray-600 interactive-el transition-colors">Batal</button>
+                <button type="button" onclick="window.submitAdminLogin()" class="flex-1 bg-emerald-950 text-white py-4 sm:py-5 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase shadow-2xl interactive-el hover:bg-emerald-800 hover:scale-105 active:scale-95 transition-all">Masuk</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =======================================================================================
+        // KONFIGURASI DATABASE MILIK ANDA
+        // =======================================================================================
+        const MY_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBwzI5PQC8xTphLk4vlmBRB_3ZS_oX8alo",
+            authDomain: "steam-kelompok-1-kelas-7a.firebaseapp.com",
+            projectId: "steam-kelompok-1-kelas-7a",
+            storageBucket: "steam-kelompok-1-kelas-7a.firebasestorage.app",
+            messagingSenderId: "913905772353",
+            appId: "1:913905772353:web:d5d9e548b0538bc122a3c0"
+        };
+
+        let isAdmin = false;
+        let siteImages = {};
+        let allFiles = [];
+        let db = null;
+        let auth = null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'steam-kelompok-1-app';
+
+        // --- SISTEM ANIMASI SCROLL (INTERSECTION OBSERVER) ---
+        function initScrollAnimations() {
+            const observerOptions = { threshold: 0.15, rootMargin: "0px 0px -50px 0px" };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-visible');
+                    }
+                });
+            }, observerOptions);
+
+            const animElements = document.querySelectorAll('.reveal-up, .reveal-left, .reveal-right, .reveal-scale');
+            animElements.forEach(el => {
+                el.classList.remove('is-visible'); 
+                observer.observe(el);
+            });
+        }
+
+        // --- SISTEM EFEK SUARA ---
+        let audioCtx;
+        window.playSound = function(type) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const t = audioCtx.currentTime;
+                
+                if (type === 'click') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(600, t);
+                    osc.frequency.exponentialRampToValueAtTime(300, t + 0.05);
+                    gain.gain.setValueAtTime(0.05, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                    osc.start(t); osc.stop(t + 0.05);
+                } else if (type === 'pop') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(400, t);
+                    osc.frequency.exponentialRampToValueAtTime(800, t + 0.1);
+                    gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start(t); osc.stop(t + 0.1);
+                } else if (type === 'remove') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(300, t);
+                    osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+                    gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                    osc.start(t); osc.stop(t + 0.1);
+                } else if (type === 'success') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(500, t);
+                    osc.frequency.setValueAtTime(750, t + 0.1);
+                    gain.gain.setValueAtTime(0.05, t); gain.gain.linearRampToValueAtTime(0.1, t + 0.2);
+                    gain.gain.linearRampToValueAtTime(0.01, t + 0.3);
+                    osc.start(t); osc.stop(t + 0.3);
+                }
+            } catch(e) { }
+        };
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.interactive-el') || e.target.closest('button')) {
+                window.playSound('click');
+            }
+        });
+
+        const initDB = () => {
+            return new Promise((resolve) => {
+                const request = indexedDB.open('SteamLocalDB', 1);
+                request.onupgradeneeded = (e) => {
+                    const idb = e.target.result;
+                    if (!idb.objectStoreNames.contains('dataStore')) idb.createObjectStore('dataStore');
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => resolve(null);
+            });
+        };
+
+        const saveLocal = async (key, data) => {
+            const idb = await initDB();
+            if(!idb) return;
+            const tx = idb.transaction('dataStore', 'readwrite');
+            tx.objectStore('dataStore').put(data, key);
+        };
+
+        const loadLocal = async (key) => {
+            const idb = await initDB();
+            if(!idb) return null;
+            return new Promise(resolve => {
+                const tx = idb.transaction('dataStore', 'readonly');
+                const req = tx.objectStore('dataStore').get(key);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const savedImages = await loadLocal('siteImages');
+            const savedFiles = await loadLocal('allFiles');
+            if(savedImages) { siteImages = savedImages; renderAllImages(); }
+            if(savedFiles) { allFiles = savedFiles; renderSubjectFiles(); }
+            
+            setTimeout(initScrollAnimations, 100); 
+        });
+
+        const compressImage = (base64Str) => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width; let height = img.height;
+                    const MAX_SIZE = 1200;
+                    if (width > height) {
+                        if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
+                    } else {
+                        if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.80));
+                };
+                img.onerror = () => resolve(base64Str);
+            });
+        };
+
+        window.toggleDropdown = function(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('dropdown-menu');
+            const arrow = document.getElementById('dropdown-arrow');
+            
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                setTimeout(() => {
+                    menu.classList.remove('scale-95', 'opacity-0');
+                    menu.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                arrow.classList.add('rotate-180');
+            } else {
+                menu.classList.remove('scale-100', 'opacity-100');
+                menu.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => menu.classList.add('hidden'), 300);
+                arrow.classList.remove('rotate-180');
+            }
+        };
+
+        window.onclick = function(event) {
+            if (!event.target.matches('#dropdown-btn')) {
+                const menu = document.getElementById('dropdown-menu');
+                const arrow = document.getElementById('dropdown-arrow');
+                if (menu && !menu.classList.contains('hidden')) {
+                    menu.classList.remove('scale-100', 'opacity-100');
+                    menu.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => menu.classList.add('hidden'), 300);
+                    if (arrow) arrow.classList.remove('rotate-180');
+                }
+            }
+        };
+
+        window.scrollToSection = function(id) {
+            window.handleNavClick('home');
+            setTimeout(() => {
+                const el = document.getElementById(id);
+                if(el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        };
+
+        window.handleSubjectClick = function(title) {
+            document.getElementById('subject-title').innerText = title;
+            window.handleNavClick('subject');
+            renderSubjectFiles();
+            renderAllImages();
+            
+            const simInfo = document.getElementById('simulator-informatika-container');
+            if (simInfo) {
+                if (title === 'INFORMATIKA') simInfo.classList.remove('hidden');
+                else simInfo.classList.add('hidden');
+            }
+        };
+
+        window.handleNavClick = function(p) {
+            if(p === 'home') {
+                document.getElementById('p-home').classList.remove('page-hidden');
+                document.getElementById('page-subject').classList.add('page-hidden');
+            } else {
+                document.getElementById('p-home').classList.add('page-hidden');
+                document.getElementById('page-subject').classList.remove('page-hidden');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            setTimeout(initScrollAnimations, 200);
+        };
+
+        window.openAdminModal = () => {
+            document.getElementById('admin-pass-input').value = "";
+            document.getElementById('admin-pass-input').placeholder = "Kode Rahasia...";
+            const modal = document.getElementById('admin-modal');
+            modal.classList.remove('hidden');
+        };
+        window.closeAdminModal = () => document.getElementById('admin-modal').classList.add('hidden');
+
+        window.submitAdminLogin = function() {
+            const input = document.getElementById('admin-pass-input');
+            if(input.value === "1357908642") {
+                isAdmin = true;
+                document.body.classList.add('admin-mode');
+                document.getElementById('admin-login-btn').innerText = "✅ ADMIN AKTIF";
+                window.closeAdminModal();
+                renderSubjectFiles();
+                renderAllImages();
+            } else { 
+                input.value = "";
+                input.placeholder = "KODE SALAH! COBA LAGI";
+                input.classList.add('border-red-500', 'animate-pulse');
+                setTimeout(() => { 
+                    input.placeholder = "Kode Rahasia..."; 
+                    input.classList.remove('border-red-500', 'animate-pulse');
+                }, 2000);
+            }
+        };
+
+        function renderAllImages() {
+            const sub = document.getElementById('subject-title').innerText;
+            const updateImg = (dataId, imgHtmlId, emojiHtmlId) => {
+                const imgEl = document.getElementById(imgHtmlId);
+                const emojiEl = document.getElementById(emojiHtmlId);
+                if(siteImages[dataId]) {
+                    if(imgEl) { imgEl.src = siteImages[dataId]; imgEl.classList.remove('hidden'); }
+                    if(emojiEl) emojiEl.classList.add('hidden');
+                } else {
+                    if(imgEl) imgEl.classList.add('hidden');
+                    if(emojiEl) emojiEl.classList.remove('hidden');
+                }
+            };
+
+            updateImg('hero', 'h-img', 'h-emoji');
+            updateImg('culture', 'img-culture', null);
+            updateImg('nutrition', 'img-nutrition', null);
+            updateImg('subject_' + sub, 'img-subject', 'subject-icon');
+
+            updateImg('team_ryoichi', 'img-team-ryoichi', 'emoji-team-ryoichi');
+            updateImg('team_dinar', 'img-team-dinar', 'emoji-team-dinar');
+            updateImg('team_juliana', 'img-team-juliana', 'emoji-team-juliana');
+            updateImg('team_natasya', 'img-team-natasya', 'emoji-team-natasya');
+            updateImg('team_ava', 'img-team-ava', 'emoji-team-ava');
+            updateImg('team_siti', 'img-team-siti', 'emoji-team-siti');
+            
+            updateImg('team_group', 'img-team-group', 'emoji-team-group');
+        }
+
+        function renderSubjectFiles() {
+            const sub = document.getElementById('subject-title').innerText;
+            const container = document.getElementById('file-list-container');
+            const filtered = allFiles.filter(f => f.subject === sub);
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="bg-white border-4 border-dashed border-emerald-100 rounded-[2rem] p-8 text-center animate-fade-in"><p class="text-[9px] font-black text-emerald-900/30 uppercase tracking-widest">Belum ada lampiran</p></div>`;
+                return;
+            }
+            container.innerHTML = filtered.map((f, i) => `
+                <div class="flex items-center gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-emerald-50 hover:shadow-xl transition-all duration-300 group animate-fade-in hover:-translate-y-1" style="animation-delay: ${i * 100}ms">
+                    <div class="w-10 h-10 sm:w-14 sm:h-14 bg-emerald-50 rounded-xl sm:rounded-2xl flex items-center justify-center text-xl sm:text-3xl group-hover:scale-110 transition-transform">📄</div>
+                    <div class="flex-1 truncate">
+                        <p class="font-black text-[10px] sm:text-[11px] uppercase text-gray-900 truncate tracking-tight mb-0.5 sm:mb-1 group-hover:text-emerald-700 transition-colors">${f.fileName}</p>
+                        <p class="text-[8px] sm:text-[9px] font-bold text-emerald-600 uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">Dokumen Tugas</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="${f.fileData}" download="${f.fileName}" class="bg-emerald-950 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase interactive-el hover:bg-emerald-800 hover:scale-105 active:scale-95 transition-all" onclick="event.stopPropagation();">Unduh</a>
+                        ${isAdmin ? `<button type="button" onclick="event.preventDefault(); event.stopPropagation(); window.deleteFile('${f.id}')" class="bg-red-500 text-white px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-black uppercase interactive-el hover:bg-red-600 hover:scale-105 active:scale-95 transition-all">Hapus</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function createVeggieParticles(containerId, count = 20, options = {}) {
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            const emojis = ['🥬', '🥦', '🥕', '🥔', '🥒', '🥜'];
+            for(let i = 0; i < count; i++) {
+                const v = document.createElement('div');
+                v.className = 'veggie-float';
+                v.innerText = emojis[Math.floor(Math.random()*emojis.length)];
+                v.style.left = Math.random()*100 + '%';
+                v.style.top = Math.random()*100 + '%';
+                v.style.setProperty('--tw-translate-x', (Math.random()-0.5)*(options.moveX || 400) + 'px');
+                v.style.setProperty('--tw-translate-y', (Math.random()-0.5)*(options.moveY || 400) + 'px');
+                v.style.setProperty('--tw-rotate', (360 + Math.random()*720) + 'deg');
+                v.style.setProperty('--veggie-opacity', options.opacity || '0.6');
+                v.style.fontSize = (options.minSize || 1) + Math.random()*(options.maxSizeDiff || 2) + 'rem';
+                v.style.animationDuration = (options.minSpeed || 10) + Math.random()*(options.speedDiff || 15) + 's';
+                v.style.animationDelay = Math.random()*10 + 's';
+                container.appendChild(v);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            // Mengurangi jumlah particle untuk HP agar lebih ringan
+            const isMobile = window.innerWidth < 768;
+            createVeggieParticles('veggie-particles-hero', isMobile ? 20 : 40, {opacity: '0.8'});
+            createVeggieParticles('veggie-particles-team', isMobile ? 15 : 30, {opacity: '0.2', moveY: 600});
+        });
+
+        async function startSync() {
+            try {
+                let configToUse = null;
+
+                if (MY_FIREBASE_CONFIG.apiKey !== "MASUKKAN_API_KEY_DISINI") {
+                    configToUse = MY_FIREBASE_CONFIG; 
+                } 
+                else if (typeof __firebase_config !== 'undefined') {
+                    configToUse = JSON.parse(__firebase_config);
+                }
+
+                if (configToUse) {
+                    if (!firebase.apps.length) firebase.initializeApp(configToUse);
+                    auth = firebase.auth();
+                    db = firebase.firestore();
+
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await auth.signInWithCustomToken(__initial_auth_token).catch(async () => {
+                                await auth.signInAnonymously();
+                            });
+                        } else {
+                            await auth.signInAnonymously(); 
+                        }
+                    } catch (authError) { }
+
+                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('site_images')
+                      .onSnapshot((snap) => {
+                          snap.docs.forEach(doc => { siteImages[doc.id] = doc.data().url; });
+                          saveLocal('siteImages', siteImages);
+                          renderAllImages();
+                      }, (err) => console.log(err));
+
+                    db.collection('artifacts').doc(appId).collection('public').doc('data').collection('subject_files')
+                      .onSnapshot((snap) => {
+                          allFiles = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                          saveLocal('allFiles', allFiles);
+                          renderSubjectFiles();
+                      }, (err) => console.log(err));
+                }
+            } catch (err) { }
+        }
+
+        startSync();
+
+        window.uploadImage = async (input, id) => {
+            if(!isAdmin || !input.files[0]) return;
+            const file = input.files[0];
+            const label = input.parentElement;
+            const originalText = label.innerText;
+            label.innerText = "MEMPROSES...";
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const compressedUrl = await compressImage(e.target.result);
+                    if (compressedUrl.length * 0.75 > 1000000) {
+                        label.innerText = "FOTO TERLALU BESAR";
+                        label.classList.add('text-red-500');
+                        setTimeout(() => { label.innerText = originalText; label.classList.remove('text-red-500'); }, 3000);
+                        return;
+                    }
+                    siteImages[id] = compressedUrl;
+                    saveLocal('siteImages', siteImages); 
+                    renderAllImages();
+                    window.playSound('success'); 
+                    if (db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('site_images').doc(id).set({ url: compressedUrl });
+                } catch(err) { } 
+                finally {
+                    label.innerText = originalText;
+                    label.appendChild(input);
+                    input.value = '';
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.deleteImage = async (id) => {
+            if(!isAdmin) return;
+            delete siteImages[id];
+            saveLocal('siteImages', siteImages);
+            renderAllImages();
+            if (db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('site_images').doc(id).delete();
+        };
+
+        window.uploadFile = async (input) => {
+            if(!isAdmin || !input.files[0]) return;
+            const file = input.files[0];
+            const labelSpan = document.getElementById('upload-file-text');
+            const originalText = labelSpan.innerText;
+            
+            if (file.size > 700 * 1024) { 
+                labelSpan.innerText = "MAKS 700KB (VERSI GRATIS)";
+                labelSpan.classList.add('text-red-500');
+                setTimeout(() => { labelSpan.innerText = originalText; labelSpan.classList.remove('text-red-500'); }, 3000);
+                input.value = ''; return;
+            }
+
+            labelSpan.innerText = "SEDANG MENGUNGGAH...";
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const sub = document.getElementById('subject-title').innerText;
+                const newId = "file_" + Date.now();
+                let finalData = e.target.result;
+                if (file.type.startsWith('image/')) finalData = await compressImage(finalData);
+
+                allFiles.push({ id: newId, subject: sub, fileName: file.name, fileData: finalData });
+                saveLocal('allFiles', allFiles); 
+                renderSubjectFiles();
+
+                if (db) {
+                    try {
+                        await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('subject_files').doc(newId).set({
+                            subject: sub, fileName: file.name, fileData: finalData, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        labelSpan.innerText = "BERHASIL ✅";
+                        window.playSound('success'); 
+                        setTimeout(() => labelSpan.innerText = originalText, 2000);
+                    } catch (error) {
+                        allFiles = allFiles.filter(f => f.id !== newId);
+                        renderSubjectFiles();
+                        labelSpan.innerText = "GAGAL: FILE TERLALU BESAR";
+                        labelSpan.classList.add('text-red-500');
+                        setTimeout(() => { labelSpan.innerText = originalText; labelSpan.classList.remove('text-red-500'); }, 4000);
+                    }
+                } else { labelSpan.innerText = originalText; }
+                input.value = ''; 
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.deleteFile = async (id) => {
+            if(!isAdmin) return;
+            allFiles = allFiles.filter(f => f.id !== id);
+            saveLocal('allFiles', allFiles);
+            renderSubjectFiles();
+            if (db) await db.collection('artifacts').doc(appId).collection('public').doc('data').collection('subject_files').doc(id).delete();
+        };
+
+        window.uploadSubjectImage = (i) => window.uploadImage(i, 'subject_' + document.getElementById('subject-title').innerText);
+        window.deleteSubjectImage = () => window.deleteImage('subject_' + document.getElementById('subject-title').innerText);
+    </script>
+
+    <script type="text/babel">
+        const { useState } = React;
+        const DATA_BAHAN = {
+            karbohidrat: [
+                { id: 'k1', nama: 'Lontong', kalori: 130, berat: 100, emoji: '🍙' },
+                { id: 'k2', nama: 'Kentang', kalori: 90, berat: 120, emoji: '🥔' }
+            ],
+            protein: [
+                { id: 'p1', nama: 'Telur Rebus', kalori: 78, berat: 50, emoji: '🥚' },
+                { id: 'p2', nama: 'Tahu Goreng', kalori: 75, berat: 60, emoji: '🟧' },
+                { id: 'p3', nama: 'Tempe Goreng', kalori: 110, berat: 60, emoji: '🟫' }
+            ],
+            sayuran: [
+                { id: 's1', nama: 'Bayam', kalori: 20, berat: 40, emoji: '🥬' },
+                { id: 's2', nama: 'Tauge', kalori: 15, berat: 30, emoji: '🌱' },
+                { id: 's3', nama: 'Kacang Panjang', kalori: 25, berat: 40, emoji: '🫛' },
+                { id: 's4', nama: 'Labu Siam', kalori: 17, berat: 50, emoji: '🍐' }
+            ],
+            tambahan: [
+                { id: 't1', nama: 'Bumbu Kacang', kalori: 150, berat: 50, emoji: '🥜' },
+                { id: 't2', nama: 'Bawang Goreng', kalori: 20, berat: 5, emoji: '🧅' },
+                { id: 't3', nama: 'Kerupuk', kalori: 60, berat: 15, emoji: '🍘' }
+            ]
+        };
+
+        function SimulatorApp() {
+            const [piring, setPlate] = useState([]);
+            const tambahKePiring = (item) => {
+                setPlate([...piring, { ...item, instanceId: Date.now() + Math.random() }]);
+                window.playSound('pop'); 
+            };
+            const hapusDariPiring = (instanceId) => {
+                setPlate(piring.filter(item => item.instanceId !== instanceId));
+                window.playSound('remove'); 
+            };
+            const totalKalori = piring.reduce((sum, item) => sum + item.kalori, 0);
+            const totalBerat = piring.reduce((sum, item) => sum + item.berat, 0);
+
+            return (
+                <div className="bg-white p-6 sm:p-10 md:p-12 rounded-[2rem] sm:rounded-[4rem] border-4 sm:border-8 border-emerald-950 shadow-2xl relative z-20 transition-all duration-500 hover:shadow-emerald-900/20">
+                    <div className="mb-6 sm:mb-10 text-center">
+                        <div className="inline-block bg-emerald-950 text-emerald-400 px-4 sm:px-6 py-1.5 sm:py-2 rounded-full mb-3 sm:mb-4 hover:bg-emerald-900 transition-colors duration-300">
+                            <h4 className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.4em]">Simulator Gizi STEAM</h4>
+                        </div>
+                        <h2 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tight italic hover:scale-105 transition-transform duration-300">Analisis Nutrisi Gado-Gado</h2>
+                    </div>
+                    <div className="flex flex-col lg:flex-row gap-8 sm:gap-12 items-start">
+                        <div className="w-full lg:w-1/2 flex flex-col items-center">
+                            <div className="w-[240px] h-[240px] sm:w-72 sm:h-72 md:w-96 md:h-96 rounded-full border-[6px] sm:border-[10px] border-emerald-950/5 bg-emerald-50/20 flex flex-wrap content-center justify-center p-6 sm:p-10 relative shadow-inner transition-colors duration-500 hover:bg-emerald-50/40">
+                                {piring.length === 0 ? (
+                                    <div className="text-center opacity-20">
+                                        <p className="text-4xl sm:text-5xl mb-2 sm:mb-4 animate-pulse">🍽️</p>
+                                        <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest">Piring Kosong</p>
+                                    </div>
+                                ) : 
+                                piring.map(item => (
+                                    <button 
+                                        type="button"
+                                        key={item.instanceId} 
+                                        onClick={() => hapusDariPiring(item.instanceId)} 
+                                        className="text-3xl sm:text-4xl md:text-5xl m-1.5 sm:m-2 drop-shadow-md interactive-el animate-pop-in hover:scale-125 transition-transform cursor-pointer"
+                                    >
+                                        {item.emoji}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="mt-6 sm:mt-10 w-full bg-emerald-950 text-white p-6 sm:p-8 rounded-[2rem] sm:rounded-[3rem] grid grid-cols-2 gap-4 sm:gap-6 hover:bg-emerald-900 transition-colors duration-300">
+                                <div className="text-center group">
+                                    <p className="text-[8px] sm:text-[9px] uppercase opacity-40 font-black tracking-widest mb-1 sm:mb-2 group-hover:opacity-100 transition-opacity">Kalori</p>
+                                    <p className="text-2xl sm:text-3xl font-black text-emerald-400 group-hover:scale-110 transition-transform duration-300">{totalKalori} <span className="text-[8px] sm:text-[10px] opacity-40 group-hover:opacity-80">KKAL</span></p>
+                                </div>
+                                <div className="border-l border-white/10 pl-4 sm:pl-6 text-center group">
+                                    <p className="text-[8px] sm:text-[9px] uppercase opacity-40 font-black tracking-widest mb-1 sm:mb-2 group-hover:opacity-100 transition-opacity">Berat</p>
+                                    <p className="text-2xl sm:text-3xl font-black group-hover:scale-110 transition-transform duration-300">{totalBerat} <span className="text-[8px] sm:text-[10px] opacity-40 group-hover:opacity-80">GR</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="w-full lg:w-1/2 space-y-4 sm:space-y-6 max-h-[400px] sm:max-h-[550px] overflow-y-auto pr-2 sm:pr-4 custom-scrollbar">
+                            {Object.entries(DATA_BAHAN).map(([kategori, items]) => (
+                                <div key={kategori} className="bg-gray-50/50 p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] hover:bg-gray-100/80 transition-colors duration-300">
+                                    <h3 className="text-[8px] sm:text-[9px] font-black text-emerald-900/40 uppercase tracking-[0.3em] mb-3 sm:mb-4 pl-1">{kategori}</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                                        {items.map((item, idx) => (
+                                            <button 
+                                                type="button"
+                                                key={item.id} 
+                                                onClick={() => tambahKePiring(item)} 
+                                                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-[1rem] sm:rounded-2xl bg-white border border-transparent hover:border-emerald-500 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-left group interactive-el"
+                                            >
+                                                <div className="text-xl sm:text-2xl group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300">{item.emoji}</div>
+                                                <div className="truncate">
+                                                    <p className="text-[9px] sm:text-[10px] font-black uppercase text-gray-900 truncate mb-0.5 group-hover:text-emerald-700 transition-colors">{item.nama}</p>
+                                                    <p className="text-[8px] sm:text-[9px] font-bold text-emerald-600 opacity-60 group-hover:opacity-100 transition-opacity">{item.kalori} kkal</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        ReactDOM.createRoot(document.getElementById('isi-piringku-root')).render(<SimulatorApp />);
+        ReactDOM.createRoot(document.getElementById('isi-piringku-root-informatika')).render(<SimulatorApp />);
+    </script>
+</body>
+</html>
